@@ -1,135 +1,14 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <map>
 #include <string>
 #include <cmath>
 #include <list>
 #include <iostream>
 #include <sstream>
 #include <cstring>
-
-class Tokenizer {
-private:
-	void MakeValidToken(std::string &);
-	int WordCount;
-
-public:
-	Tokenizer() : WordCount(0) {};
-	virtual ~Tokenizer() {};
-	void Tokenize(std::map<std::string, int> &, std::ifstream &, int );
-	int GetWordCount();
-
-};
-
-
-
-void Tokenizer::MakeValidToken(std::string &badToken) {
-
-	std::size_t pos;
-
-	pos = badToken.find_last_not_of(",.;:$%&[]()/\n\t|\\?!'\"*#<>");
-	if (pos != std::string::npos)
-		badToken.erase(pos + 1);                                      //cutting invalid chars at the end
-
-	pos = badToken.find_first_not_of(",.;:$%&[]()/\n\t|\\?!'\"*#<>");
-	if (pos != std::string::npos)
-		badToken.erase(0, pos);										//cutting invalid chars at the start
-};
-
-void Tokenizer::Tokenize(std::map<std::string, int> &words, std::ifstream &inputFile, int lineCount) {
-
-	std::string token;
-	std::string line;
-
-	for (int i = 1; i <= lineCount; i++) {
-
-		std::getline(inputFile, line);
-		std::istringstream tokens(line);
-
-		while (tokens >> token) {
-
-
-			MakeValidToken(token);
-
-			auto it = words.find(token);
-			if (it == words.end()) {
-				words.insert(std::make_pair(token, 1));
-			}
-			else {
-				words[it->first]++;
-			}
-
-			WordCount++;
-		}
-	}
-};
-
-int Tokenizer::GetWordCount() {
-
-	return WordCount;
-}
-
-
-
-
-class Classifier {
-private:
-	int AllThreadCount;
-	struct StatFile {
-		std::map<std::string, int> Words;
-		int ThreadCount;
-		int WordCount;
-	};
-
-
-public:
-	Classifier() : AllThreadCount(0) {};
-	virtual ~Classifier() {};
-	void HandleStatFile(std::ifstream &);
-	double GetCurrentProbability(StatFile &, std::map<std::string, int> &);
-
-	std::list<StatFile> StatFiles;
-};
-
-
-void Classifier::HandleStatFile(std::ifstream &file) {
-
-	StatFile currentFile;
-	currentFile.Words.clear();
-
-	std::string string;
-	int count;
-
-
-	file >> currentFile.ThreadCount >> currentFile.WordCount;
-	AllThreadCount += currentFile.ThreadCount;
-
-	while (file >> string >> count) {
-		currentFile.Words.insert(std::make_pair(string, count));
-	}
-
-	StatFiles.push_back(currentFile);
-}
-
-double Classifier::GetCurrentProbability(StatFile &currentFile, std::map<std::string, int> &wordsForClassify) {
-
-	//probability that the word belongs to current class
-	double probability = 0;
-	int vocabrurySize = currentFile.Words.size();
-
-	for (auto it : wordsForClassify) {
-		auto node = currentFile.Words.find(it.first);
-		int occurensesCount = node == currentFile.Words.end() ? 1 : node->second + 1;
-		probability += std::log((occurensesCount) / (double)(currentFile.WordCount + currentFile.Words.size()));
-	}
-
-
-	//probabilty that the thread belongs to current class
-	probability += std::log(currentFile.ThreadCount / (double)AllThreadCount);
-
-	return probability;
-}
+#include "classifier.h"
+#include "tokenizer.h"
 
 static const int MODE = 1;
 static const int ARGS_COUNT_MIN = 7;
@@ -194,8 +73,6 @@ void classify(int argc, char **argv) {
 	int lineCount;
 	int marker;
 
-	
-	std::cout << "WTF!" << std::endl;
 	while (std::getline(inputFile, line)) {
 
 		std::istringstream markerLine(line);
